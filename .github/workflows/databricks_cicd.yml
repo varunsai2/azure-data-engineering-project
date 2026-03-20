@@ -52,7 +52,7 @@ jobs:
             --wait \
             --json '{
               "run_name": "cicd_triggered_run",
-              "existing_cluster_id": "0311-001108-xxi94syq?o=7405610187326950",
+              "existing_cluster_id": "0311-001108-xxi94syq",
               "notebook_task": {
                 "notebook_path": "/Shared/bronze_to_silver_taxi_pipeline"
               }
