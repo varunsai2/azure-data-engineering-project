@@ -1,0 +1,59 @@
+name: Databricks CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Databricks CLI
+        run: pip install databricks-cli
+
+      - name: Configure Databricks CLI
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks configure --token <<EOF
+          $DATABRICKS_HOST
+          $DATABRICKS_TOKEN
+          EOF
+
+      - name: Deploy notebook to Databricks
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks workspace import \
+            "(Clone) bronze_to_silver_taxi_pipeline.ipynb" \
+            /Shared/bronze_to_silver_taxi_pipeline \
+            --language PYTHON \
+            --format JUPYTER \
+            --overwrite
+
+      - name: Trigger Databricks Job
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks runs submit \
+            --wait \
+            --json '{
+              "run_name": "cicd_triggered_run",
+              "existing_cluster_id": "0311-001108-xxi94syq?o=7405610187326950",
+              "notebook_task": {
+                "notebook_path": "/Shared/bronze_to_silver_taxi_pipeline"
+              }
+            }'
